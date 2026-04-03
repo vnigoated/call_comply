@@ -174,18 +174,20 @@ Every processed transcript is stored in the local vector index to demonstrate se
 
 ```text
 hcl_hackathon/
-+-- main.py
-+-- vector_store.py
-+-- README.md
-+-- requirements.txt
-+-- .env.example
-+-- frontend/
-¦   +-- components/
-¦   +-- pages/
-¦   +-- styles/
-¦   +-- package.json
-+-- data/
-    +-- transcripts.db   # created at runtime
+|- main.py
+|- vector_store.py
+|- README.md
+|- requirements.txt
+|- .env.example
+|- render.yaml
+|- frontend/
+|  |- components/
+|  |- pages/
+|  |- styles/
+|  |- package.json
+|  `- vercel.json
+`- data/
+   `- transcripts.db   # created at runtime
 ```
 
 ## Local Setup
@@ -258,6 +260,8 @@ Recommended setup:
 
 Create a new Render Web Service pointing at this repository.
 
+This repository now includes `render.yaml`, so you can also use Render Blueprint deployment instead of entering settings manually.
+
 Settings:
 - Environment: `Python`
 - Root directory: repository root
@@ -287,6 +291,8 @@ Verify the backend:
 ### 3. Deploy the Next.js frontend on Vercel
 
 Create a new Vercel project from the same repository.
+
+This repository now includes `frontend/vercel.json`, so the frontend build commands are already captured in the repo.
 
 Settings:
 - Framework: `Next.js`
