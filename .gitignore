@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/
+frontend/.next/
+frontend/node_modules/
+call-analysis-report.csv
+call-analysis-report.pdf
+*.mp3
