@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+
 :root {
   --bg: #f6f8fc;
   --bg-soft: #eef3fb;
@@ -25,7 +27,7 @@ body {
   padding: 0;
   margin: 0;
   min-height: 100%;
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: "Manrope", "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 10% 12%, rgba(93, 115, 255, 0.16), transparent 24%),
     radial-gradient(circle at 88% 18%, rgba(15, 174, 147, 0.1), transparent 18%),
@@ -170,31 +172,109 @@ pre {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 16px;
   flex: 1;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 24px;
+  background: #dff4ef;
+  border: 1px solid rgba(15, 174, 147, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 18px 30px rgba(76, 103, 168, 0.1);
+}
+
+.brand-mark-core {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.brand-orbit {
+  position: absolute;
+  inset: 1px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 174, 147, 0.22);
+  transform: rotate(18deg);
+}
+
+.brand-v {
+  position: absolute;
+  bottom: 7px;
+  width: 8px;
+  height: 22px;
+  border-radius: 999px;
+  background: #0fae93;
+  box-shadow: 0 3px 10px rgba(56, 82, 128, 0.08);
+}
+
+.brand-v-left {
+  left: 11px;
+  transform: rotate(28deg);
+}
+
+.brand-v-right {
+  left: 22px;
+  transform: rotate(-28deg);
+}
+
+.brand-node {
+  position: absolute;
+  border-radius: 999px;
+  background: #5d73ff;
+  box-shadow: 0 5px 14px rgba(56, 84, 134, 0.08);
+}
+
+.brand-node-large {
+  right: 4px;
+  top: 9px;
+  width: 8px;
+  height: 8px;
+}
+
+.brand-node-small {
+  left: 7px;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  opacity: 0.88;
 }
 
 .brand-kicker {
   display: block;
   color: var(--teal);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.68rem;
-  margin-bottom: 2px;
+  letter-spacing: 0.24em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .brand-lockup strong {
   display: block;
-  font-size: clamp(1.7rem, 2.5vw, 2.2rem);
-  letter-spacing: -0.045em;
+  font-size: clamp(1.9rem, 2.7vw, 2.5rem);
+  letter-spacing: -0.06em;
+}
+
+.brand-wordmark {
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 800;
+  line-height: 0.95;
+  text-wrap: balance;
 }
 
 .brand-subtitle {
-  margin: 6px 0 0;
+  margin: 10px 0 0;
   max-width: 54ch;
   color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.6;
+  font-size: 0.96rem;
+  line-height: 1.7;
 }
 
 .workspace-topbar-badges {
@@ -262,6 +342,8 @@ pre {
 .hero-copy h1 {
   margin: 0;
   max-width: 12ch;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 800;
   font-size: clamp(3rem, 6vw, 5.2rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
@@ -438,6 +520,8 @@ pre {
 .marquee-copy h2 {
   margin: 0;
   max-width: 18ch;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 800;
   font-size: clamp(1.7rem, 3vw, 2.5rem);
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -472,6 +556,8 @@ pre {
 
 .landing-card h3 {
   margin: 0 0 10px;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 700;
   font-size: 1.3rem;
 }
 
@@ -560,6 +646,8 @@ pre {
 
 .workspace-section-heading h2 {
   margin: 0;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 800;
   font-size: clamp(1.9rem, 3vw, 2.8rem);
   letter-spacing: -0.04em;
 }
@@ -634,6 +722,8 @@ pre {
 .results-panel h2,
 .intelligence-panel h2 {
   margin: 0;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 700;
   font-size: 1.6rem;
 }
 
@@ -1103,6 +1193,8 @@ pre {
 .original-box h3,
 .empty-state h3 {
   margin: 0;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-weight: 700;
 }
 
 .summary-content {
@@ -1332,6 +1424,10 @@ pre {
     justify-content: flex-start;
   }
 
+  .brand-lockup {
+    align-items: flex-start;
+  }
+
   .marquee-pill-row {
     justify-content: flex-start;
   }
@@ -1352,6 +1448,12 @@ pre {
 
   .hero-copy h1 {
     font-size: 2.8rem;
+  }
+
+  .brand-mark {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
   }
 
   .toolbar,

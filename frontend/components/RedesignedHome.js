@@ -105,7 +105,7 @@ function wrapReportLine(text, maxLength = 95) {
 
 function buildReportLines(responseObj, language) {
   const lines = [
-    'Call Intelligence Platform Report',
+    'CallComply Report',
     '',
     `Language: ${sanitizeReportValue(responseObj.language || language)}`,
     `Compliance score: ${typeof responseObj?.sop_validation?.complianceScore === 'number'
@@ -437,11 +437,20 @@ export default function RedesignedHome() {
 
       <section className="topbar panel topbar-panel">
         <div className="brand-lockup">
+          <div className="brand-mark" aria-hidden="true">
+            <span className="brand-mark-core">
+              <span className="brand-orbit" />
+              <span className="brand-v brand-v-left" />
+              <span className="brand-v brand-v-right" />
+              <span className="brand-node brand-node-large" />
+              <span className="brand-node brand-node-small" />
+            </span>
+          </div>
           <div>
             <span className="brand-kicker">
               {enteredWorkspace ? 'Review workspace' : 'Multilingual AI platform'}
             </span>
-            <strong>Call Intelligence Platform</strong>
+            <strong className="brand-wordmark">CallComply</strong>
             {enteredWorkspace && (
               <p className="brand-subtitle">
                 Inspect multilingual calls, validate SOP behavior, and extract business signals from one wide review surface.
