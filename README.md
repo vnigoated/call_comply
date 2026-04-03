@@ -271,12 +271,15 @@ Settings:
 Add these Render environment variables:
 
 ```env
+PYTHON_VERSION=3.11.10
 GROQ_API_KEY=your_real_groq_key
 ASSEMBLYAI_API_KEY=your_real_assemblyai_key
 API_SECRET_KEY=your_api_secret_key
 STT_PROVIDER=assemblyai
 VECTOR_DB_PATH=data/transcripts.db
 ```
+
+This repo also includes `.python-version` and `render.yaml` pinned to Python `3.11.10` so Render does not default to Python `3.14.3`, which can break `pydantic-core` wheel installation for this dependency set.
 
 After deployment, copy the Render backend URL, for example:
 
