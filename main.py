@@ -102,6 +102,59 @@ def get_groq_client():
     return _groq_client
 
 
+def groq_chat_completion(
+    *,
+    messages: list[dict[str, str]],
+    temperature: float,
+    max_tokens: int,
+    response_format: dict | None = None,
+) -> str:
+    """Get Groq chat completion content with SDK-first, REST fallback behavior."""
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY not set")
+
+    payload: dict = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if response_format:
+        payload["response_format"] = response_format
+
+    # 1) Try official Groq SDK first
+    try:
+        client = get_groq_client()
+        resp = client.chat.completions.create(**payload)
+        return (resp.choices[0].message.content or "").strip()
+    except Exception as sdk_error:
+        logger.warning("Groq SDK call failed, falling back to REST API: %s", sdk_error)
+
+    # 2) Fallback to direct REST call to avoid SDK/httpx compatibility issues
+    session = get_http_session()
+    response = session.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=60,
+    )
+    if response.status_code >= 400:
+        raise RuntimeError(
+            f"Groq REST API error {response.status_code}: {response.text}"
+        )
+
+    data = response.json()
+    try:
+        return (data["choices"][0]["message"]["content"] or "").strip()
+    except Exception as parse_error:
+        raise RuntimeError(
+            f"Groq REST parse error: {parse_error}; raw={data}"
+        ) from parse_error
+
+
 # ── Request / Response models ─────────────────────────────────────────────────
 class AnalyticsRequest(BaseModel):
     language: Literal["Tamil", "Hindi"]
@@ -364,35 +417,28 @@ Transcript:
 
 def analyze_with_groq(transcript: str, language: str) -> dict:
     prompt = ANALYSIS_PROMPT.replace("{transcript}", transcript)
-    client = get_groq_client()
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    raw = groq_chat_completion(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
-        response_format={"type": "json_object"},
         max_tokens=1500,
+        response_format={"type": "json_object"},
     )
-
-    raw = response.choices[0].message.content
     return json.loads(raw)
 
 
 def answer_question_with_groq(context: str, question: str) -> str:
     """Answer a user question using only the supplied context. Return plain text."""
-    client = get_groq_client()
     prompt = (
         "You are an expert assistant. Answer the question ONLY using the information provided below. "
         "If the answer cannot be found in the provided sources, respond exactly with: 'Insufficient information.' "
         "Cite sources inline using the format [ID:<transcript_id>] when referencing facts.\\n\\n"
         f"CONTEXT:\n{context}\n\nQuestion: {question}\n\nAnswer:"
     )
-    resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    return groq_chat_completion(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
         max_tokens=700,
     )
-    return resp.choices[0].message.content
 
 
 COMMON_ENGLISH_WORDS = {
@@ -655,7 +701,6 @@ def translate_with_groq(text: str, source_language: str) -> str:
     if not should_translate_transcript(text, source_language):
         return text
 
-    client = get_groq_client()
     prompt = (
         "Translate the following call transcript to natural English.\n"
         "Preserve speaker turns, names, numbers, money amounts, and business details exactly when present.\n"
@@ -664,13 +709,11 @@ def translate_with_groq(text: str, source_language: str) -> str:
         + text
     )
     try:
-        resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        translated = groq_chat_completion(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
             max_tokens=1500,
         )
-        translated = resp.choices[0].message.content
         return translated.strip()
     except Exception as e:
         raise RuntimeError(f"Groq translation failed: {e}") from e
