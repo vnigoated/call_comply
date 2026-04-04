@@ -54,12 +54,6 @@ const landingStats = [
   { value: '1', label: 'Unified review workflow' },
 ]
 
-const workspaceBadges = [
-  'Evaluator-ready transcript',
-  'Native-script transcript toggle',
-  'Structured compliance analytics',
-]
-
 function sanitizeReportValue(value) {
   if (value === null || value === undefined) return ''
   if (Array.isArray(value)) return value.join(', ')
@@ -488,13 +482,6 @@ export default function RedesignedHome() {
               </>
             )}
           </nav>
-          {enteredWorkspace && (
-            <div className="workspace-topbar-badges">
-              {workspaceBadges.map((badge) => (
-                <span key={badge}>{badge}</span>
-              ))}
-            </div>
-          )}
           {enteredWorkspace ? (
             <button className="ghost-button" onClick={() => setEnteredWorkspace(false)} type="button">
               Back to landing

@@ -277,26 +277,6 @@ pre {
   line-height: 1.7;
 }
 
-.workspace-topbar-badges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  max-width: 560px;
-}
-
-.workspace-topbar-badges span {
-  padding: 0.58rem 0.88rem;
-  border-radius: 999px;
-  border: 1px solid rgba(45, 77, 136, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 250, 255, 0.88));
-  color: #28466d;
-  font-weight: 700;
-  font-size: 0.9rem;
-  box-shadow: 0 10px 24px rgba(57, 84, 142, 0.06);
-}
-
 .topbar-pills {
   display: flex;
   flex-wrap: wrap;
@@ -1414,12 +1394,6 @@ pre {
     align-items: flex-start;
   }
 
-  .workspace-topbar-badges {
-    justify-content: flex-start;
-    width: 100%;
-    max-width: none;
-  }
-
   .workspace-topbar-actions {
     width: 100%;
     justify-content: flex-start;
@@ -1696,11 +1670,6 @@ body {
   border-radius: 999px;
   padding: 0.45rem 0.85rem;
   font-weight: 600;
-}
-
-.workspace-topbar-badges span {
-  padding: 0.42rem 0.72rem;
-  font-size: 0.82rem;
 }
 
 .workspace-topbar-actions .ghost-button {
