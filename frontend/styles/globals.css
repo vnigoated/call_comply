@@ -1790,6 +1790,74 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 255, 0.92));
 }
 
+.architecture-section {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 40px;
+  border: 6px solid #f1dfb8;
+  background: linear-gradient(180deg, #f7f7f8, #f2f3f5);
+  box-shadow:
+    inset 0 0 0 2px rgba(226, 196, 145, 0.35),
+    0 14px 32px rgba(45, 58, 86, 0.08);
+}
+
+.architecture-head {
+  margin-bottom: 14px;
+}
+
+.architecture-intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 70ch;
+}
+
+.architecture-diagram-shell {
+  border: 1px solid rgba(115, 123, 142, 0.25);
+  border-radius: 16px;
+  background: #f5f5f6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  overflow: auto;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.architecture-title-wrap {
+  max-width: 1280px;
+  margin: 0 auto 10px;
+  padding: 0 2px;
+}
+
+.architecture-title {
+  margin: 0;
+  font-family: "Sora", "Manrope", sans-serif;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  letter-spacing: -0.03em;
+  color: #102746;
+}
+
+.architecture-diagram-canvas {
+  min-width: 1180px;
+  padding: 10px 14px;
+}
+
+.architecture-diagram-canvas svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.architecture-diagram-loading,
+.architecture-diagram-error {
+  margin: 0;
+  padding: 14px;
+  color: var(--muted);
+}
+
+.architecture-diagram-error {
+  color: #9f1239;
+}
+
 .feature-spotlight-card {
   border-radius: 16px;
   border: 1px solid rgba(20, 52, 88, 0.1);
@@ -1812,6 +1880,17 @@ body {
   .landing-hero {
     padding: 24px;
     min-height: auto;
+  }
+
+  .architecture-section {
+    padding: 18px;
+    border-radius: 28px;
+    border-width: 5px;
+  }
+
+  .architecture-diagram-canvas {
+    min-width: 760px;
+    padding: 8px;
   }
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import QAWidget from './QAWidget'
+import ArchitectureDiagram from './ArchitectureDiagram'
 
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
@@ -457,6 +458,11 @@ export default function RedesignedHome() {
             <button className="nav-link-button" onClick={() => scrollToSection('feature-tour')} type="button">
               Features
             </button>
+            {!enteredWorkspace && (
+              <button className="nav-link-button" onClick={() => scrollToSection('architecture-zone')} type="button">
+                Architecture
+              </button>
+            )}
             {enteredWorkspace && (
               <>
                 <button className="nav-link-button" onClick={() => scrollToSection('workspace-zone')} type="button">
@@ -546,6 +552,13 @@ export default function RedesignedHome() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section className="architecture-section panel" id="architecture-zone">
+            <div className="architecture-title-wrap">
+              <h2 className="architecture-title">Architecture Diagram</h2>
+            </div>
+            <ArchitectureDiagram />
           </section>
 
           <section className="landing-feature-strip panel" id="feature-tour">
