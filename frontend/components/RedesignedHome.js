@@ -881,21 +881,35 @@ export default function RedesignedHome() {
               </div>
             )}
 
-            {showRaw && responseObj && (
-              <pre className="raw-box">{JSON.stringify(responseObj, null, 2)}</pre>
-            )}
-
-            {showOriginal && responseObj?.original_transcript && (
-              <div className="original-box premium-original">
-                <div className="card-topline">
-                  <span>Original language view</span>
-                  <strong>{language}</strong>
-                </div>
-                <h3>Native transcript</h3>
-                <pre>{responseObj.original_transcript}</pre>
-              </div>
-            )}
           </section>
+
+          {showRaw && responseObj && (
+            <div className="overlay-backdrop" onClick={() => setShowRaw(false)}>
+              <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
+                <div className="overlay-header">
+                  <h3>Raw JSON</h3>
+                  <button className="secondary-button" onClick={() => setShowRaw(false)} type="button">
+                    Close
+                  </button>
+                </div>
+                <pre className="overlay-content raw-box">{JSON.stringify(responseObj, null, 2)}</pre>
+              </div>
+            </div>
+          )}
+
+          {showOriginal && responseObj?.original_transcript && (
+            <div className="overlay-backdrop" onClick={() => setShowOriginal(false)}>
+              <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
+                <div className="overlay-header">
+                  <h3>{language} transcript</h3>
+                  <button className="secondary-button" onClick={() => setShowOriginal(false)} type="button">
+                    Close
+                  </button>
+                </div>
+                <pre className="overlay-content original-box premium-original">{responseObj.original_transcript}</pre>
+              </div>
+            </div>
+          )}
         </>
       )}
     </main>
