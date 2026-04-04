@@ -26,25 +26,18 @@ const productSignals = [
   { label: 'Analytics', value: 'Enterprise-ready', tone: 'amber' },
 ]
 
-const workflow = [
-  'Upload a Tamil or Hindi customer call',
-  'Transcribe and translate to evaluator-friendly English',
-  'Score SOP adherence and business intent',
-  'Expose keywords, sentiment, and original transcript on demand',
-]
-
-const landingHighlights = [
+const featureSpotlights = [
   {
-    title: 'Multilingual by default',
-    text: 'Built for Tamil and Hindi conversations with evaluator-friendly English outputs and native transcript access.',
+    title: 'Multilingual Transcript Intelligence',
+    text: 'Capture Tamil and Hindi calls with English-ready transcript output and original-language preservation.',
   },
   {
-    title: 'Compliance-first review',
-    text: 'Turn raw calls into structured SOP checks, payment intent, rejection signals, and keyword anchors.',
+    title: 'Compliance-first Call Scoring',
+    text: 'Instant SOP checks, adherence scoring, and explanation-first outputs for reviewer confidence.',
   },
   {
-    title: 'Demo-ready workspace',
-    text: 'A polished review layer for teams, judges, and stakeholders to understand outcomes fast.',
+    title: 'Semantic QA and Retrieval',
+    text: 'Ask natural-language questions over indexed calls and get source-linked answers for fast audits.',
   },
 ]
 
@@ -244,6 +237,7 @@ export default function RedesignedHome() {
   const [showCard, setShowCard] = useState(true)
   const [showRaw, setShowRaw] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
+  const [expandAssessment, setExpandAssessment] = useState(false)
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState(null)
   const [dragActive, setDragActive] = useState(false)
@@ -456,11 +450,6 @@ export default function RedesignedHome() {
               {enteredWorkspace ? 'Review workspace' : 'Multilingual AI platform'}
             </span>
             <strong className="brand-wordmark">CallComply</strong>
-            {enteredWorkspace && (
-              <p className="brand-subtitle">
-                Inspect multilingual calls, validate SOP behavior, and extract business signals from one wide review surface.
-              </p>
-            )}
           </div>
         </div>
         <div className={`topbar-actions ${enteredWorkspace ? 'workspace-topbar-actions' : ''}`}>
@@ -559,57 +548,19 @@ export default function RedesignedHome() {
             </div>
           </section>
 
-          <section className="landing-marquee panel">
-            <div className="marquee-copy">
-              <span className="eyebrow">Built for review teams</span>
-              <h2>One workspace for transcript quality, SOP adherence, and business signals.</h2>
-            </div>
-            <div className="marquee-pill-row">
-              <span>Tamil + Hindi support</span>
-              <span>Evaluator-friendly transcript</span>
-              <span>Original transcript toggle</span>
-              <span>Keyword extraction</span>
-            </div>
-          </section>
-
-          <section className="workflow-strip panel">
-            {workflow.map((step, index) => (
-              <div className="workflow-step" key={step}>
-                <span className="workflow-index">{`0${index + 1}`}</span>
-                <p>{step}</p>
-              </div>
-            ))}
-          </section>
-
-          <section className="features-panel panel" id="feature-tour">
+          <section className="landing-feature-strip panel" id="feature-tour">
             <div className="features-panel-head">
-              <span className="eyebrow">Feature tour</span>
-              <h2>Everything your team needs in one sleek flow</h2>
+              <span className="eyebrow">Why teams pick CallComply</span>
+              <h2>Essential capabilities, clearly structured</h2>
             </div>
             <div className="features-panel-grid">
-              <article>
-                <h3>Analyze calls</h3>
-                <p>Upload audio and run multilingual transcription, translation, and SOP compliance scoring in one pass.</p>
-              </article>
-              <article>
-                <h3>Review insights</h3>
-                <p>Inspect sentiment, payment intent, rejection reasons, and keyword anchors with clean, structured cards.</p>
-              </article>
-              <article>
-                <h3>Ask semantic questions</h3>
-                <p>Use semantic search + QA to query indexed calls and get evidence-backed answers with transcript references.</p>
-              </article>
+              {featureSpotlights.map((item) => (
+                <article className="feature-spotlight-card" key={item.title}>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              ))}
             </div>
-          </section>
-
-          <section className="landing-grid">
-            {landingHighlights.map((item) => (
-              <article className="panel landing-card" key={item.title}>
-                <span className="eyebrow">Feature</span>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
           </section>
         </>
       ) : (
@@ -749,42 +700,22 @@ export default function RedesignedHome() {
 
                 <div className="insight-quote">
                   <span>Assessment</span>
-                  <p>{qualitySummary}</p>
+                  <p
+                    className={`assessment-text ${expandAssessment ? 'expanded' : ''}`}
+                    title={qualitySummary}
+                  >
+                    {qualitySummary}
+                  </p>
+                  <button
+                    className="assessment-toggle"
+                    type="button"
+                    onClick={() => setExpandAssessment((value) => !value)}
+                  >
+                    {expandAssessment ? 'Show less' : 'Show more'}
+                  </button>
                 </div>
               </div>
 
-              <div className="workspace-summary-grid">
-                <div className="mini-surface">
-                  <span>Transcript</span>
-                  <strong>{responseObj ? 'Generated' : 'Pending'}</strong>
-                </div>
-                <div className="mini-surface">
-                  <span>Commercial signal</span>
-                  <strong>{responseObj?.analytics?.paymentPreference || 'Unavailable'}</strong>
-                </div>
-                <div className="mini-surface">
-                  <span>Language</span>
-                  <strong>{responseObj?.language || language}</strong>
-                </div>
-                <div className="mini-surface">
-                  <span>Keywords</span>
-                  <strong>{responseObj?.keywords?.length || 0} extracted</strong>
-                </div>
-              </div>
-
-              <div className="panel side-signal-panel">
-                <span className="eyebrow">Business context</span>
-                <div className="overview-list premium-overview">
-                  <div>
-                    <span>Rejection reason</span>
-                    <strong>{responseObj?.analytics?.rejectionReason || 'Unavailable'}</strong>
-                  </div>
-                  <div>
-                    <span>Sentiment</span>
-                    <strong>{responseObj?.analytics?.sentiment || 'Unavailable'}</strong>
-                  </div>
-                </div>
-              </div>
               <div id="qa-zone">
                 <QAWidget apiKey={FRONTEND_API_KEY} />
               </div>
