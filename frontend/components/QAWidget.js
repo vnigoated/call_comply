@@ -89,17 +89,19 @@ export default function QAWidget({ apiKey }) {
         <div className="qa-result">
           <h4>Assistant answer</h4>
           <p className="qa-answer-bubble">{answer}</p>
-          <h5>Sources</h5>
           {sources.length === 0 ? (
             <p className="muted-text">No sources returned.</p>
           ) : (
-            <ul>
-              {sources.map((s) => (
-                <li key={s.transcript_id}>
-                  <strong>[ID:{s.transcript_id}]</strong> {s.summary} — <em>{s.snippet}</em>
-                </li>
-              ))}
-            </ul>
+            <details className="qa-sources" open>
+              <summary>{`Sources (${sources.length})`}</summary>
+              <ul>
+                {sources.map((s) => (
+                  <li key={s.transcript_id}>
+                    <strong>[ID:{s.transcript_id}]</strong> {s.summary} — <em>{s.snippet}</em>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </div>
       )}
