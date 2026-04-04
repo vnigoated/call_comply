@@ -5,7 +5,7 @@ This repository implements the Track 3 hackathon requirement: a protected API th
 The current solution includes:
 - FastAPI backend for the required API
 - AssemblyAI-based speech-to-text pipeline
-- Groq-powered translation and structured analysis
+- AssemblyAI-first transcript/translation flow with Groq-powered structured analysis
 - SQLite-backed vector storage for transcript indexing and semantic search
 - Next.js frontend for demoing uploads, analysis, transcript review, and PDF/CSV export
 
@@ -126,8 +126,11 @@ The backend:
 ### 2. Translation / Cleanup
 
 The backend:
-- skips translation when STT output already looks English-ish
-- otherwise translates to cleaner English for evaluator review
+- uses `TRANSLATION_PROVIDER` to choose translation mode
+- defaults to `assemblyai` mode (requests English translation via AssemblyAI `speech_understanding.translation`)
+- supports optional `groq` mode for explicit LLM translation when needed
+- keeps `original_transcript` in source language and returns English in `transcript`
+- applies cleanup/guardrails for repetition artifacts and truncated translation payloads
 - normalizes speaker labels into `Agent:` / `Customer:` where possible
 
 ### 3. Structured NLP Analysis
@@ -208,8 +211,10 @@ GROQ_API_KEY=your_groq_api_key
 ASSEMBLYAI_API_KEY=your_assemblyai_api_key
 API_SECRET_KEY=sk_track3_987654321
 STT_PROVIDER=assemblyai
+TRANSLATION_PROVIDER=assemblyai
 VECTOR_DB_PATH=data/transcripts.db
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_KEY=your_frontend_api_key
 ```
 
 Run the backend:
@@ -226,11 +231,16 @@ npm install
 npm run dev
 ```
 
-For local development, set this in the frontend environment:
+For local development, create `frontend/.env.local` and set:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_KEY=sk_track3_987654321
 ```
+
+The frontend now reads the API key from `NEXT_PUBLIC_API_KEY` only (no API key input in the UI).
+
+Note: use standard dotenv formatting (`KEY=value`) with no spaces around `=`.
 
 Frontend URL:
 
@@ -276,6 +286,7 @@ GROQ_API_KEY=your_real_groq_key
 ASSEMBLYAI_API_KEY=your_real_assemblyai_key
 API_SECRET_KEY=your_api_secret_key
 STT_PROVIDER=assemblyai
+TRANSLATION_PROVIDER=assemblyai
 VECTOR_DB_PATH=data/transcripts.db
 ```
 
@@ -305,9 +316,27 @@ Add this Vercel environment variable:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=https://your-backend-name.onrender.com
+NEXT_PUBLIC_API_KEY=your_api_secret_key
 ```
 
-This frontend now reads the backend URL from `NEXT_PUBLIC_API_BASE_URL`, so there is no localhost hardcoding in production.
+This frontend now reads backend URL and browser-side API key from environment variables, so there is no URL hardcoding and no API key entry field in the UI.
+
+### Deployment-ready checklist
+
+1. Backend (Render) has these env vars configured:
+  - `GROQ_API_KEY`
+  - `ASSEMBLYAI_API_KEY`
+  - `API_SECRET_KEY`
+  - `STT_PROVIDER=assemblyai`
+  - `TRANSLATION_PROVIDER=assemblyai`
+  - `VECTOR_DB_PATH=data/transcripts.db`
+2. Frontend (Vercel) has:
+  - `NEXT_PUBLIC_API_BASE_URL=https://your-backend-name.onrender.com`
+  - `NEXT_PUBLIC_API_KEY=<same API secret used by backend>`
+3. Verify backend health endpoint before frontend tests:
+  - `https://your-backend-name.onrender.com/health`
+4. Verify required API endpoint:
+  - `POST https://your-backend-name.onrender.com/api/call-analytics`
 
 ### 4. Redeploy and test the full flow
 

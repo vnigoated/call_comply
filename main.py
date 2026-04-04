@@ -46,6 +46,7 @@ async def add_timing_header(request: Request, call_next):
 GROQ_API_KEY   = os.getenv("GROQ_API_KEY")
 API_SECRET_KEY = os.getenv("API_SECRET_KEY", "sk_track3_987654321")
 STT_PROVIDER = os.getenv("STT_PROVIDER", "assemblyai").lower()
+TRANSLATION_PROVIDER = os.getenv("TRANSLATION_PROVIDER", "assemblyai").lower()
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH", str(Path("data") / "transcripts.db"))
 _groq_client = None
@@ -167,6 +168,23 @@ class TranscriptSearchResponse(BaseModel):
     results: list[TranscriptSearchResult]
 
 
+# ── QA models ───────────────────────────────────────────────────────────────
+class QARequest(BaseModel):
+    query: str
+    limit: int = 5
+
+
+class QASource(BaseModel):
+    transcript_id: int
+    score: float
+    summary: str
+    snippet: str
+
+
+class QAResponse(BaseModel):
+    query: str
+    answer: str
+    sources: list[QASource]
 # ── Auth ──────────────────────────────────────────────────────────────────────
 def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_SECRET_KEY:
@@ -180,7 +198,7 @@ def verify_api_key(x_api_key: str = Header(...)):
  
 
 
-def transcribe_audio(audio_bytes: bytes, language: str) -> str:
+def transcribe_audio(audio_bytes: bytes, language: str) -> tuple[str, str]:
     provider = STT_PROVIDER
     if provider == "assemblyai":
         return transcribe_with_assemblyai(audio_bytes, language)
@@ -191,13 +209,18 @@ def transcribe_audio(audio_bytes: bytes, language: str) -> str:
 
 
 
-def transcribe_with_assemblyai(audio_bytes: bytes, language: str) -> str:
+def transcribe_with_assemblyai(audio_bytes: bytes, language: str) -> tuple[str, str]:
     """Transcribe audio using AssemblyAI REST API.
 
     Workflow:
     1. Upload audio bytes to /v2/upload (returns `upload_url`).
     2. Create a transcription via /v2/transcript with requested models and language detection.
-    3. Poll the transcript endpoint until `status` is `completed` or `error`.
+    3. Optionally request English translation in the same transcript job.
+    4. Poll the transcript endpoint until `status` is `completed` or `error`.
+
+    Returns:
+    - original_text: transcript text in the source language (or mixed-language output)
+    - english_text: translated English text when available; falls back to original_text
     """
     if not ASSEMBLYAI_API_KEY:
         raise Exception("ASSEMBLYAI_API_KEY must be set to use AssemblyAI provider")
@@ -226,6 +249,21 @@ def transcribe_with_assemblyai(audio_bytes: bytes, language: str) -> str:
         "speech_models": ["universal-3-pro", "universal-2"],
         "language_detection": True,
     }
+
+    # Ask AssemblyAI for English translation in the same transcription call
+    # when translation provider is set to AssemblyAI.
+    if TRANSLATION_PROVIDER == "assemblyai":
+        # `match_original_utterance` requires `speaker_labels` or `multichannel`.
+        # Enabling speaker labels here keeps translation aligned and complete.
+        payload["speaker_labels"] = True
+        payload["speech_understanding"] = {
+            "request": {
+                "translation": {
+                    "target_languages": ["en"],
+                    "match_original_utterance": True,
+                }
+            }
+        }
     r2 = session.post(
         transcripts_url,
         headers={**headers, "content-type": "application/json"},
@@ -254,7 +292,24 @@ def transcribe_with_assemblyai(audio_bytes: bytes, language: str) -> str:
         body = r.json()
         status = body.get("status")
         if status == "completed":
-            return body.get("text", "")
+            original_text = body.get("text", "") or ""
+            translated_texts = body.get("translated_texts") or {}
+            english_text = (
+                translated_texts.get("en")
+                or translated_texts.get("en_us")
+                or original_text
+            )
+            # Guard against unexpectedly short translation payloads.
+            if original_text and english_text:
+                min_len = max(120, int(len(original_text) * 0.35))
+                if len(english_text.strip()) < min_len:
+                    logger.warning(
+                        "AssemblyAI translated_texts appears truncated (len=%d, original=%d); falling back to original text",
+                        len(english_text.strip()),
+                        len(original_text.strip()),
+                    )
+                    english_text = original_text
+            return original_text, english_text
         if status == "error":
             raise Exception(f"AssemblyAI transcription failed: {body.get('error')} | {body}")
         time.sleep(1)
@@ -320,6 +375,24 @@ def analyze_with_groq(transcript: str, language: str) -> dict:
 
     raw = response.choices[0].message.content
     return json.loads(raw)
+
+
+def answer_question_with_groq(context: str, question: str) -> str:
+    """Answer a user question using only the supplied context. Return plain text."""
+    client = get_groq_client()
+    prompt = (
+        "You are an expert assistant. Answer the question ONLY using the information provided below. "
+        "If the answer cannot be found in the provided sources, respond exactly with: 'Insufficient information.' "
+        "Cite sources inline using the format [ID:<transcript_id>] when referencing facts.\\n\\n"
+        f"CONTEXT:\n{context}\n\nQuestion: {question}\n\nAnswer:"
+    )
+    resp = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0,
+        max_tokens=700,
+    )
+    return resp.choices[0].message.content
 
 
 COMMON_ENGLISH_WORDS = {
@@ -435,12 +508,51 @@ def normalize_speaker_transcript(text: str) -> tuple[str, dict[str, str | int | 
     }
 
 
+def sanitize_repeated_translation_artifacts(text: str) -> str:
+    """Reduce pathological repetitions that can appear in machine translation output.
+
+    This keeps normal emphasis but removes long runs like
+    "now, now, now, now..." or repeated short phrases.
+    """
+    if not text or not text.strip():
+        return text
+
+    # Collapse 4+ repeated identical words to a max of 2.
+    text = re.sub(
+        r"\b([A-Za-z']+)\b(?:\s*[,:;\-]?\s*\1\b){3,}",
+        lambda m: f"{m.group(1)}, {m.group(1)}",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Collapse repeated short phrase runs (2-5 words) when repeated 3+ times.
+    text = re.sub(
+        r"\b((?:[A-Za-z']+\s+){1,4}[A-Za-z']+)\b(?:\s*[,:;\-]?\s*\1\b){2,}",
+        lambda m: m.group(1),
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Remove immediate duplicate comma-separated fragments.
+    text = re.sub(
+        r"\b([^,.!?]{2,80})\b(?:\s*,\s*\1\b){2,}",
+        lambda m: m.group(1),
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Final whitespace cleanup.
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+([?.!,;:])", r"\1", text)
+    return text
+
+
 def should_translate_transcript(text: str, source_language: str) -> bool:
     """Translate only when the STT output does not already look English-ish.
 
     AssemblyAI can sometimes return English or romanized text for Tanglish/Hinglish.
     Running an extra translation pass over that text can degrade it noticeably,
-    so we use a lightweight heuristic before sending it to the LLM again.
+    so we use a lightweight heuristic before any optional translator pass.
     """
     if not text or not text.strip():
         return False
@@ -466,6 +578,24 @@ def should_translate_transcript(text: str, source_language: str) -> bool:
         return False
 
     return True
+
+
+def translate_with_assemblyai(text: str, source_language: str) -> str:
+    """Use AssemblyAI transcript output as the English-ready transcript.
+
+    AssemblyAI already powers STT in this project. For this mode we intentionally
+    avoid Groq translation and rely on the transcript returned by AssemblyAI.
+    """
+    if not text or not text.strip():
+        return text
+
+    if not should_translate_transcript(text, source_language):
+        return text
+
+    logger.info(
+        "TRANSLATION_PROVIDER=assemblyai enabled; using AssemblyAI transcript output directly"
+    )
+    return text
 
 
 def normalize_analysis(raw_analysis: dict, *, language: str, transcript: str) -> CallAnalyticsResponse:
@@ -546,6 +676,17 @@ def translate_with_groq(text: str, source_language: str) -> str:
         raise RuntimeError(f"Groq translation failed: {e}") from e
 
 
+def translate_transcript(text: str, source_language: str) -> str:
+    provider = TRANSLATION_PROVIDER
+    if provider == "assemblyai":
+        return translate_with_assemblyai(text, source_language)
+    if provider == "groq":
+        return translate_with_groq(text, source_language)
+    raise RuntimeError(
+        f"Unsupported TRANSLATION_PROVIDER: {provider}. Supported: assemblyai, groq"
+    )
+
+
 # ── Main endpoint ─────────────────────────────────────────────────────────────
 def process_call_analytics(
     body: AnalyticsRequest,
@@ -558,24 +699,29 @@ def process_call_analytics(
         raise HTTPException(status_code=400, detail="Invalid Base64 audio data")
 
     try:
-        transcript = transcribe_audio(audio_bytes, body.language)
+        original_transcript, stt_english_transcript = transcribe_audio(audio_bytes, body.language)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"STT failed: {str(e)}")
 
-    if not transcript or not transcript.strip():
+    if not original_transcript or not original_transcript.strip():
         raise HTTPException(status_code=422, detail="Transcription returned empty result")
 
-    transcript, original_speaker_stats = normalize_speaker_transcript(transcript)
+    original_transcript, original_speaker_stats = normalize_speaker_transcript(original_transcript)
+
+    translated_seed = sanitize_repeated_translation_artifacts(
+        stt_english_transcript or original_transcript
+    )
+    translated_seed, translated_speaker_stats = normalize_speaker_transcript(translated_seed)
 
     try:
-        translated = translate_with_groq(transcript, body.language)
+        translated = translate_transcript(translated_seed, body.language)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Translation failed: {str(e)}")
 
     if not translated or not translated.strip():
-        translated = transcript
+        translated = translated_seed
 
-    translated, translated_speaker_stats = normalize_speaker_transcript(translated)
+    translated = sanitize_repeated_translation_artifacts(translated)
 
     try:
         analysis = analyze_with_groq(translated, body.language)
@@ -606,7 +752,7 @@ def process_call_analytics(
 
     return VerboseCallAnalyticsResponse(
         **response_payload.model_dump(),
-        original_transcript=transcript.strip(),
+        original_transcript=original_transcript.strip(),
         speaker_stats=translated_speaker_stats or original_speaker_stats,
     )
 
@@ -658,5 +804,50 @@ def health():
     return {
         "status": "ok",
         "stt_provider": STT_PROVIDER,
+        "translation_provider": TRANSLATION_PROVIDER,
         "vector_store": vector_store.stats(),
     }
+
+
+@app.post("/api/qa", response_model=QAResponse)
+def qa(
+    body: QARequest,
+    api_key: str = Depends(verify_api_key),
+):
+    """Semantic QA over indexed transcripts using the local vector store.
+
+    Returns an answer and the top sources (transcript ids, brief snippet and summary).
+    """
+    query = body.query.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Query must be a non-empty string")
+
+    results = vector_store.search(query, limit=body.limit)
+    if not results:
+        return QAResponse(query=query, answer="Insufficient information.", sources=[])
+
+    # Build context prioritizing summaries (short) then a snippet of the transcript.
+    context_parts: list[str] = []
+    for r in results:
+        snippet = (r.transcript or "").replace("\n", " ")[:1200]
+        context_parts.append(
+            f"ID:{r.transcript_id}\nSCORE:{r.score:.4f}\nSUMMARY:{r.summary}\nSNIPPET:{snippet}"
+        )
+    context = "\n\n".join(context_parts)
+
+    try:
+        answer = answer_question_with_groq(context, query)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"QA model failed: {e}")
+
+    sources = [
+        QASource(
+            transcript_id=item.transcript_id,
+            score=item.score,
+            summary=item.summary,
+            snippet=(item.transcript or "")[:300].replace("\n", " "),
+        )
+        for item in results
+    ]
+
+    return QAResponse(query=query, answer=(answer or "").strip(), sources=sources)

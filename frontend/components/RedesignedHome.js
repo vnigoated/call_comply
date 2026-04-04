@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import QAWidget from './QAWidget'
 
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 ).replace(/\/$/, '')
+const FRONTEND_API_KEY = process.env.NEXT_PUBLIC_API_KEY || ''
 
 const sopFields = [
   { key: 'greeting', label: 'Greeting' },
@@ -240,7 +242,6 @@ function createSimplePdf(reportLines) {
 export default function RedesignedHome() {
   const [enteredWorkspace, setEnteredWorkspace] = useState(false)
   const [health, setHealth] = useState(null)
-  const [apiKey, setApiKey] = useState('sk_track3_987654321')
   const [language, setLanguage] = useState('Tamil')
   const [fileB64, setFileB64] = useState('')
   const [fileName, setFileName] = useState('')
@@ -254,6 +255,16 @@ export default function RedesignedHome() {
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef(null)
   const resultsRef = useRef(null)
+
+  function scrollToSection(id) {
+    if (typeof document === 'undefined') return
+    const section = document.getElementById(id)
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function scrollToFeatures() {
+    scrollToSection('feature-tour')
+  }
 
   async function checkHealth() {
     try {
@@ -318,7 +329,7 @@ export default function RedesignedHome() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
+          'x-api-key': FRONTEND_API_KEY,
         },
         body: JSON.stringify(body),
       })
@@ -459,6 +470,24 @@ export default function RedesignedHome() {
           </div>
         </div>
         <div className={`topbar-actions ${enteredWorkspace ? 'workspace-topbar-actions' : ''}`}>
+          <nav className="brand-nav-links" aria-label="Primary">
+            <button className="nav-link-button" onClick={() => scrollToSection('feature-tour')} type="button">
+              Features
+            </button>
+            {enteredWorkspace && (
+              <>
+                <button className="nav-link-button" onClick={() => scrollToSection('workspace-zone')} type="button">
+                  Workspace
+                </button>
+                <button className="nav-link-button" onClick={() => scrollToSection('results-zone')} type="button">
+                  Results
+                </button>
+                <button className="nav-link-button" onClick={() => scrollToSection('qa-zone')} type="button">
+                  QA Chat
+                </button>
+              </>
+            )}
+          </nav>
           {enteredWorkspace && (
             <div className="workspace-topbar-badges">
               {workspaceBadges.map((badge) => (
@@ -493,6 +522,9 @@ export default function RedesignedHome() {
               <div className="hero-actions">
                 <button className="primary-button" onClick={() => setEnteredWorkspace(true)} type="button">
                   Get started
+                </button>
+                <button className="secondary-button" onClick={scrollToFeatures} type="button">
+                  Explore features
                 </button>
                 <button className="ghost-button" onClick={checkHealth} type="button">
                   Check platform status
@@ -562,6 +594,27 @@ export default function RedesignedHome() {
             ))}
           </section>
 
+          <section className="features-panel panel" id="feature-tour">
+            <div className="features-panel-head">
+              <span className="eyebrow">Feature tour</span>
+              <h2>Everything your team needs in one sleek flow</h2>
+            </div>
+            <div className="features-panel-grid">
+              <article>
+                <h3>Analyze calls</h3>
+                <p>Upload audio and run multilingual transcription, translation, and SOP compliance scoring in one pass.</p>
+              </article>
+              <article>
+                <h3>Review insights</h3>
+                <p>Inspect sentiment, payment intent, rejection reasons, and keyword anchors with clean, structured cards.</p>
+              </article>
+              <article>
+                <h3>Ask semantic questions</h3>
+                <p>Use semantic search + QA to query indexed calls and get evidence-backed answers with transcript references.</p>
+              </article>
+            </div>
+          </section>
+
           <section className="landing-grid">
             {landingHighlights.map((item) => (
               <article className="panel landing-card" key={item.title}>
@@ -575,7 +628,7 @@ export default function RedesignedHome() {
       ) : (
         <>
           <section className="workspace-layout">
-            <div className="panel control-panel control-panel-wide">
+            <div className="panel control-panel control-panel-wide" id="workspace-zone">
               <div className="workspace-section-heading">
                 <div>
                   <span className="eyebrow">Review setup</span>
@@ -745,10 +798,13 @@ export default function RedesignedHome() {
                   </div>
                 </div>
               </div>
+              <div id="qa-zone">
+                <QAWidget apiKey={FRONTEND_API_KEY} />
+              </div>
             </div>
           </section>
 
-          <section className="panel results-panel premium-results" ref={resultsRef}>
+          <section className="panel results-panel premium-results" id="results-zone" ref={resultsRef}>
             <div className="panel-heading results-heading">
               <div>
                 <span className="eyebrow">Analysis layer</span>
