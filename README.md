@@ -396,11 +396,4 @@ To support the evaluation criteria from the PDF:
 - transcripts are indexed for semantic search
 - request/response validation is enforced with Pydantic models
 
-## Known Scope
 
-This repository is optimized for the hackathon evaluation flow:
-- single-call processing
-- JSON-first output
-- strong demo UX for transcript review
-
-It is not yet a production multi-tenant platform with background job queues, RBAC, or webhook-based STT orchestration.
